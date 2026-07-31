@@ -22,6 +22,22 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'books',
+        loadComponent: () => import('./features/books/books').then((m) => m.Books),
+      },
+      {
+        path: 'books/authors',
+        loadComponent: () => import('./features/authors/authors').then((m) => m.Authors),
+      },
+      {
+        path: 'books/categories',
+        loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),
+      },
+      {
+        path: 'books/publishers',
+        loadComponent: () => import('./features/publishers/publishers').then((m) => m.Publishers),
+      },
     ],
   },
 ];
