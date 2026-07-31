@@ -12,7 +12,7 @@ interface CatalogTab {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive, MatTabsModule],
   template: `
-    <nav mat-tab-nav-bar [tabPanel]="panel" class="mb-4">
+    <nav mat-tab-nav-bar [tabPanel]="panel" class="mb-6 border-b border-line" [disableRipple]="true">
       @for (tab of tabs; track tab.path) {
         <a
           mat-tab-link

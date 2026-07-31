@@ -8,6 +8,7 @@ import {
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
@@ -24,5 +25,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([errorInterceptor, authInterceptor, refreshInterceptor])),
     provideAnimationsAsync(),
     provideAppInitializer(() => firstValueFrom(inject(AuthService).tryRestoreSession())),
+    { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
   ]
 };

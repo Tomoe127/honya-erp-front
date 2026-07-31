@@ -1,4 +1,122 @@
 @import "tailwindcss";
 
+/*
+ * Honya ERP — sistema de diseño "librería".
+ * Mundo visual: pergamino, tinta, lomos de libro en tapa dura (oxblood),
+ * papel de ficha de catálogo. Un solo acento (oxblood) para acciones;
+ * verde/ámbar/rojo solo para estados semánticos (stock, alertas, errores).
+ */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+
+  --color-parchment: #f6f1e7;
+  --color-parchment-deep: #efe7d8;
+  --color-paper: #fbf8f1;
+  --color-ink: #1b2430;
+  --color-ink-soft: #55606e;
+  --color-ink-muted: #8d8779;
+
+  --color-brand: #7a2e2e;
+  --color-brand-dark: #5e2222;
+  --color-brand-soft: #f1e4e1;
+
+  --color-success: #3f6b4b;
+  --color-success-soft: #e4eee6;
+  --color-warning: #9a6b23;
+  --color-warning-soft: #f5eada;
+  --color-danger: #b3261e;
+  --color-danger-soft: #f8e4e2;
+
+  --color-line: rgba(27, 36, 48, 0.08);
+  --color-line-strong: rgba(27, 36, 48, 0.16);
+}
+
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Signature: "lomo" — acento de lomo de libro reutilizado en nav activo,
+   tarjeta de login y métricas del dashboard. */
+.spine {
+  border-left: 3px solid var(--color-brand);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Campo de texto propio (reemplaza mat-form-field para inputs simples):
+ * label estático arriba, caja "inset" (fondo más oscuro que la tarjeta que
+ * lo contiene), foco con anillo de marca. Ver .interface-design/system.md.
+ */
+.field {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-parchment-deep);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--color-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field::placeholder {
+  color: var(--color-ink-muted);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/*
+ * mat-select restilado para combinar con .field (mismo radio, mismo fondo
+ * "inset", mismo foco de marca). Usa los tokens de tema M3 de Material en
+ * vez de pelear con sus clases internas.
+ */
+.field-select {
+  --mdc-outlined-text-field-container-shape: 8px;
+  --mdc-outlined-text-field-outline-color: var(--color-line-strong);
+  --mdc-outlined-text-field-hover-outline-color: var(--color-line-strong);
+  --mdc-outlined-text-field-focus-outline-color: var(--color-brand);
+  --mdc-outlined-text-field-outline-width: 1px;
+  --mdc-outlined-text-field-focus-outline-width: 1px;
+}
+
+.field-select .mat-mdc-text-field-wrapper {
+  background: var(--color-parchment-deep);
+  border-radius: 8px;
+}
+
+.field-select .mat-mdc-form-field-infix {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  min-height: unset;
+}
+
+.field-select .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}

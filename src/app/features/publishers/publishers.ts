@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { CatalogTabs } from '../../shared/components/catalog-tabs/catalog-tabs';
@@ -12,85 +10,100 @@ import { PublisherService } from './data/publisher.service';
 @Component({
   selector: 'app-publishers',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatPaginatorModule,
-    MatTableModule,
-    CatalogTabs,
-  ],
+  imports: [ReactiveFormsModule, MatButtonModule, MatPaginatorModule, MatTableModule, CatalogTabs],
   template: `
+    <h1 class="font-serif text-2xl font-semibold tracking-tight text-ink mb-1">Editoriales</h1>
+    <p class="text-sm text-ink-muted mb-6">Proveedores editoriales del catálogo.</p>
+
     <app-catalog-tabs />
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-2 items-start mb-4">
-      <mat-form-field appearance="outline">
-        <mat-label>Nombre</mat-label>
-        <input matInput formControlName="name" />
-      </mat-form-field>
+    <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
+        {{ editingId() ? 'Editar editorial' : 'Nueva editorial' }}
+      </h2>
+      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-3 items-end">
+        <div class="flex flex-col gap-1.5 min-w-[200px]">
+          <label for="pub-name" class="field-label">Nombre</label>
+          <input id="pub-name" formControlName="name" class="field" />
+        </div>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Email</mat-label>
-        <input matInput formControlName="contactEmail" />
-      </mat-form-field>
+        <div class="flex flex-col gap-1.5 min-w-[200px]">
+          <label for="pub-email" class="field-label">Email</label>
+          <input id="pub-email" formControlName="contactEmail" class="field" />
+        </div>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Teléfono</mat-label>
-        <input matInput formControlName="contactPhone" />
-      </mat-form-field>
+        <div class="flex flex-col gap-1.5 min-w-[160px]">
+          <label for="pub-phone" class="field-label">Teléfono</label>
+          <input id="pub-phone" formControlName="contactPhone" class="field" />
+        </div>
 
-      <mat-form-field appearance="outline" class="flex-1 min-w-[200px]">
-        <mat-label>Dirección</mat-label>
-        <input matInput formControlName="address" />
-      </mat-form-field>
+        <div class="flex flex-col gap-1.5 flex-1 min-w-[220px]">
+          <label for="pub-address" class="field-label">Dirección</label>
+          <input id="pub-address" formControlName="address" class="field" />
+        </div>
 
-      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
-        {{ editingId() ? 'Actualizar' : 'Crear' }}
-      </button>
-      @if (editingId()) {
-        <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
+        <div class="flex gap-2">
+          <button
+            mat-flat-button
+            type="submit"
+            style="background-color: var(--color-brand); color: white;"
+            [disabled]="form.invalid"
+          >
+            {{ editingId() ? 'Actualizar' : 'Crear' }}
+          </button>
+          @if (editingId()) {
+            <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
+          }
+        </div>
+      </form>
+
+      @if (errorMessage()) {
+        <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
       }
-    </form>
+    </div>
 
-    @if (errorMessage()) {
-      <p class="text-red-600 text-sm mb-2">{{ errorMessage() }}</p>
-    }
+    <div class="rounded-lg border border-line bg-paper overflow-hidden">
+      <table mat-table [dataSource]="publishers()" class="w-full">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let publisher">{{ publisher.name }}</td>
+        </ng-container>
 
-    <table mat-table [dataSource]="publishers()" class="w-full">
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Nombre</th>
-        <td mat-cell *matCellDef="let publisher">{{ publisher.name }}</td>
-      </ng-container>
+        <ng-container matColumnDef="contactEmail">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let publisher">{{ publisher.contactEmail }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="contactEmail">
-        <th mat-header-cell *matHeaderCellDef>Email</th>
-        <td mat-cell *matCellDef="let publisher">{{ publisher.contactEmail }}</td>
-      </ng-container>
+        <ng-container matColumnDef="contactPhone">
+          <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+          <td mat-cell *matCellDef="let publisher">{{ publisher.contactPhone }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="contactPhone">
-        <th mat-header-cell *matHeaderCellDef>Teléfono</th>
-        <td mat-cell *matCellDef="let publisher">{{ publisher.contactPhone }}</td>
-      </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let publisher" class="text-right">
+            <button
+              type="button"
+              class="text-sm font-medium text-brand hover:underline"
+              (click)="edit(publisher)"
+            >
+              Editar
+            </button>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let publisher">
-          <button mat-button (click)="edit(publisher)">Editar</button>
-        </td>
-      </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
 
-      <tr mat-header-row *matHeaderRowDef="columns"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns"></tr>
-    </table>
-
-    <mat-paginator
-      [length]="totalElements()"
-      [pageSize]="pageSize()"
-      [pageIndex]="pageIndex()"
-      [pageSizeOptions]="[10, 20, 50]"
-      (page)="onPageChange($event)"
-    />
+      <mat-paginator
+        [length]="totalElements()"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+      />
+    </div>
   `,
 })
 export class Publishers {
