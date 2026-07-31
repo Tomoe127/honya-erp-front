@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 
-interface CatalogTab {
+interface PurchaseTab {
   label: string;
   path: string;
 }
 
 @Component({
-  selector: 'app-catalog-tabs',
+  selector: 'app-purchase-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive, MatTabsModule],
   template: `
@@ -29,11 +29,9 @@ interface CatalogTab {
     <mat-tab-nav-panel #panel />
   `,
 })
-export class CatalogTabs {
-  protected readonly tabs: CatalogTab[] = [
-    { label: 'Libros', path: '/books' },
-    { label: 'Autores', path: '/books/authors' },
-    { label: 'Categorías', path: '/books/categories' },
-    { label: 'Editoriales', path: '/books/publishers' },
+export class PurchaseTabs {
+  protected readonly tabs: PurchaseTab[] = [
+    { label: 'Compras', path: '/purchases' },
+    { label: 'Proveedores', path: '/purchases/suppliers' },
   ];
 }
