@@ -38,6 +38,10 @@ export const routes: Routes = [
         path: 'books/publishers',
         loadComponent: () => import('./features/publishers/publishers').then((m) => m.Publishers),
       },
+      {
+        path: 'inventory',
+        loadComponent: () => import('./features/inventory/inventory').then((m) => m.Inventory),
+      },
     ],
   },
 ];
