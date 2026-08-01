@@ -1,80 +1,38 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { SaleTabs } from '../../shared/components/sale-tabs/sale-tabs';
+import { CustomerFormDialog } from './customer-form-dialog/customer-form-dialog';
 import { Customer } from './data/customer.model';
 import { CustomerService } from './data/customer.service';
 
 @Component({
   selector: 'app-customers',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatButtonModule, MatPaginatorModule, MatTableModule, SaleTabs],
+  imports: [MatButtonModule, MatPaginatorModule, MatTableModule, SaleTabs],
   template: `
     <h1 class="font-serif text-2xl font-semibold tracking-tight text-ink mb-1">Clientes</h1>
     <p class="text-sm text-ink-muted mb-6">Clientes registrados para la venta.</p>
 
     <app-sale-tabs />
 
-    <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
-        {{ editingId() ? 'Editar cliente' : 'Nuevo cliente' }}
-      </h2>
-      <form [formGroup]="form" (ngSubmit)="submit()" class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-name" class="field-label">Nombre</label>
-          <input id="cus-name" formControlName="name" class="field" />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-doc-type" class="field-label">Tipo de documento</label>
-          <input id="cus-doc-type" formControlName="documentType" placeholder="DNI / RUC" class="field" />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-doc-number" class="field-label">Número de documento</label>
-          <input
-            id="cus-doc-number"
-            formControlName="documentNumber"
-            [readonly]="!!editingId()"
-            class="field"
-            [class.opacity-60]="!!editingId()"
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-phone" class="field-label">Teléfono</label>
-          <input id="cus-phone" formControlName="phone" class="field" />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-email" class="field-label">Email</label>
-          <input id="cus-email" type="email" formControlName="email" class="field" />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label for="cus-address" class="field-label">Dirección</label>
-          <input id="cus-address" formControlName="address" class="field" />
-        </div>
-
-        <div class="col-span-2 flex gap-2">
-          <button
-            mat-flat-button
-            type="submit"
-            style="background-color: var(--color-brand); color: white;"
-            [disabled]="form.invalid"
-          >
-            {{ editingId() ? 'Actualizar' : 'Crear' }}
-          </button>
-          @if (editingId()) {
-            <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
-          }
-        </div>
-      </form>
+    <div class="rounded-lg border border-line bg-paper p-5 mb-6">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Clientes registrados</span>
+        <button
+          mat-flat-button
+          type="button"
+          style="background-color: var(--color-brand); color: white;"
+          (click)="openCreateDialog()"
+        >
+          Nuevo cliente
+        </button>
+      </div>
 
       @if (errorMessage()) {
-        <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
+        <p class="text-sm text-danger mt-3">{{ errorMessage() }}</p>
       }
     </div>
 
@@ -124,7 +82,7 @@ import { CustomerService } from './data/customer.service';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let customer" class="text-right whitespace-nowrap">
-            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="edit(customer)">
+            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(customer)">
               Editar
             </button>
             <button
@@ -152,7 +110,7 @@ import { CustomerService } from './data/customer.service';
   `,
 })
 export class Customers {
-  private readonly fb = inject(FormBuilder);
+  private readonly dialog = inject(MatDialog);
   private readonly customerService = inject(CustomerService);
 
   protected readonly columns = ['name', 'document', 'phone', 'email', 'status', 'actions'];
@@ -160,17 +118,7 @@ export class Customers {
   protected readonly totalElements = signal(0);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
-  protected readonly editingId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
-
-  protected readonly form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    documentType: ['', Validators.required],
-    documentNumber: ['', Validators.required],
-    phone: [''],
-    email: ['', Validators.email],
-    address: [''],
-  });
 
   constructor() {
     this.load();
@@ -194,60 +142,33 @@ export class Customers {
     this.load();
   }
 
-  protected edit(customer: Customer): void {
-    this.editingId.set(customer.id);
-    this.form.setValue({
-      name: customer.name,
-      documentType: customer.documentType,
-      documentNumber: customer.documentNumber,
-      phone: customer.phone ?? '',
-      email: customer.email ?? '',
-      address: customer.address ?? '',
-    });
+  protected openCreateDialog(): void {
+    this.openDialog(null);
   }
 
-  protected cancelEdit(): void {
-    this.editingId.set(null);
-    this.form.reset({ name: '', documentType: '', documentNumber: '', phone: '', email: '', address: '' });
+  protected openEditDialog(customer: Customer): void {
+    this.openDialog(customer);
+  }
+
+  private openDialog(customer: Customer | null): void {
+    const dialogRef = this.dialog.open(CustomerFormDialog, {
+      width: '560px',
+      maxWidth: '90vw',
+      panelClass: 'app-dialog',
+      backdropClass: 'app-dialog-backdrop',
+      data: { customer },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.load();
+      }
+    });
   }
 
   protected toggleStatus(customer: Customer): void {
     this.customerService.updateStatus(customer.id, !customer.active).subscribe({
       next: () => this.load(),
-      error: (error: Error) => this.errorMessage.set(error.message),
-    });
-  }
-
-  protected submit(): void {
-    if (this.form.invalid) {
-      return;
-    }
-    this.errorMessage.set(null);
-    const value = this.form.getRawValue();
-    const id = this.editingId();
-
-    const operation = id
-      ? this.customerService.update(id, {
-          name: value.name,
-          documentType: value.documentType,
-          phone: value.phone,
-          email: value.email,
-          address: value.address,
-        })
-      : this.customerService.create({
-          name: value.name,
-          documentType: value.documentType,
-          documentNumber: value.documentNumber,
-          phone: value.phone,
-          email: value.email,
-          address: value.address,
-        });
-
-    operation.subscribe({
-      next: () => {
-        this.cancelEdit();
-        this.load();
-      },
       error: (error: Error) => this.errorMessage.set(error.message),
     });
   }

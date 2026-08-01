@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -12,8 +13,12 @@ import { Category } from '../categories/data/category.model';
 import { CategoryService } from '../categories/data/category.service';
 import { Publisher } from '../publishers/data/publisher.model';
 import { PublisherService } from '../publishers/data/publisher.service';
+import { BookFormDialog } from './book-form-dialog/book-form-dialog';
 import { Book, BookStatus } from './data/book.model';
 import { BookService } from './data/book.service';
+
+const ALL_CATEGORIES = 0;
+const ALL_STATUSES = '';
 
 @Component({
   selector: 'app-books',
@@ -44,7 +49,7 @@ import { BookService } from './data/book.service';
           <label class="field-label">Categoría</label>
           <mat-form-field appearance="outline" class="field-select">
             <mat-select formControlName="categoryId">
-              <mat-option [value]="null">Todas</mat-option>
+              <mat-option [value]="allCategories">Todas</mat-option>
               @for (category of categories(); track category.id) {
                 <mat-option [value]="category.id">{{ category.name }}</mat-option>
               }
@@ -56,7 +61,7 @@ import { BookService } from './data/book.service';
           <label class="field-label">Estado</label>
           <mat-form-field appearance="outline" class="field-select">
             <mat-select formControlName="status">
-              <mat-option [value]="null">Todos</mat-option>
+              <mat-option [value]="allStatuses">Todos</mat-option>
               <mat-option value="ACTIVE">Activo</mat-option>
               <mat-option value="INACTIVE">Inactivo</mat-option>
             </mat-select>
@@ -69,98 +74,12 @@ import { BookService } from './data/book.service';
           mat-flat-button
           type="button"
           style="background-color: var(--color-brand); color: white;"
-          (click)="startCreate()"
+          (click)="openCreateDialog()"
         >
           Nuevo libro
         </button>
       </form>
     </div>
-
-    @if (showForm()) {
-      <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
-        <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
-          {{ editingId() ? 'Editar libro' : 'Nuevo libro' }}
-        </h2>
-        <form [formGroup]="form" (ngSubmit)="submit()" class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5">
-            <label for="book-isbn" class="field-label">ISBN</label>
-            <input
-              id="book-isbn"
-              formControlName="isbn"
-              [readonly]="!!editingId()"
-              class="field"
-              [class.opacity-60]="!!editingId()"
-            />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label for="book-title" class="field-label">Título</label>
-            <input id="book-title" formControlName="title" class="field" />
-          </div>
-
-          <div class="flex flex-col gap-1.5 col-span-2">
-            <label for="book-description" class="field-label">Descripción</label>
-            <input id="book-description" formControlName="description" class="field" />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label for="book-price" class="field-label">Precio</label>
-            <input id="book-price" type="number" step="0.01" formControlName="price" class="field" />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label for="book-cost-price" class="field-label">Precio de costo</label>
-            <input id="book-cost-price" type="number" step="0.01" formControlName="costPrice" class="field" />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label class="field-label">Categoría</label>
-            <mat-form-field appearance="outline" class="field-select">
-              <mat-select formControlName="categoryId">
-                @for (category of categories(); track category.id) {
-                  <mat-option [value]="category.id">{{ category.name }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <label class="field-label">Editorial</label>
-            <mat-form-field appearance="outline" class="field-select">
-              <mat-select formControlName="publisherId">
-                <mat-option [value]="null">Sin editorial</mat-option>
-                @for (publisher of publishers(); track publisher.id) {
-                  <mat-option [value]="publisher.id">{{ publisher.name }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="flex flex-col gap-1.5 col-span-2">
-            <label class="field-label">Autores</label>
-            <mat-form-field appearance="outline" class="field-select">
-              <mat-select formControlName="authorIds" multiple>
-                @for (author of authors(); track author.id) {
-                  <mat-option [value]="author.id">{{ author.name }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="col-span-2 flex gap-2">
-            <button
-              mat-flat-button
-              type="submit"
-              style="background-color: var(--color-brand); color: white;"
-              [disabled]="form.invalid"
-            >
-              {{ editingId() ? 'Actualizar' : 'Crear' }}
-            </button>
-            <button mat-button type="button" (click)="cancelForm()">Cancelar</button>
-          </div>
-        </form>
-      </div>
-    }
 
     @if (errorMessage()) {
       <p class="text-sm text-danger mb-4">{{ errorMessage() }}</p>
@@ -210,7 +129,7 @@ import { BookService } from './data/book.service';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let book" class="text-right whitespace-nowrap">
-            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="edit(book)">
+            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(book)">
               Editar
             </button>
             <button
@@ -239,10 +158,14 @@ import { BookService } from './data/book.service';
 })
 export class Books {
   private readonly fb = inject(FormBuilder);
+  private readonly dialog = inject(MatDialog);
   private readonly bookService = inject(BookService);
   private readonly categoryService = inject(CategoryService);
   private readonly publisherService = inject(PublisherService);
   private readonly authorService = inject(AuthorService);
+
+  protected readonly allCategories = ALL_CATEGORIES;
+  protected readonly allStatuses = ALL_STATUSES;
 
   protected readonly columns = ['isbn', 'title', 'categoryName', 'price', 'status', 'actions'];
   protected readonly books = signal<Book[]>([]);
@@ -252,25 +175,12 @@ export class Books {
   protected readonly totalElements = signal(0);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
-  protected readonly editingId = signal<number | null>(null);
-  protected readonly showForm = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly filterForm = this.fb.nonNullable.group({
     q: [''],
-    categoryId: [null as number | null],
-    status: [null as BookStatus | null],
-  });
-
-  protected readonly form = this.fb.nonNullable.group({
-    isbn: ['', Validators.required],
-    title: ['', Validators.required],
-    description: [''],
-    price: [0, [Validators.required, Validators.min(0)]],
-    costPrice: [null as number | null],
-    categoryId: [null as number | null, Validators.required],
-    publisherId: [null as number | null],
-    authorIds: [[] as number[]],
+    categoryId: [ALL_CATEGORIES],
+    status: [ALL_STATUSES as BookStatus | typeof ALL_STATUSES],
   });
 
   constructor() {
@@ -306,8 +216,8 @@ export class Books {
       .search(
         {
           q: filters.q || undefined,
-          categoryId: filters.categoryId ?? undefined,
-          status: filters.status ?? undefined,
+          categoryId: filters.categoryId || undefined,
+          status: filters.status || undefined,
         },
         this.pageIndex(),
         this.pageSize(),
@@ -330,87 +240,45 @@ export class Books {
   }
 
   protected resetFilters(): void {
-    this.filterForm.reset({ q: '', categoryId: null, status: null });
+    this.filterForm.reset({ q: '', categoryId: ALL_CATEGORIES, status: ALL_STATUSES });
   }
 
-  protected startCreate(): void {
-    this.editingId.set(null);
-    this.form.reset({
-      isbn: '',
-      title: '',
-      description: '',
-      price: 0,
-      costPrice: null,
-      categoryId: null,
-      publisherId: null,
-      authorIds: [],
+  protected openCreateDialog(): void {
+    const dialogRef = this.dialog.open(BookFormDialog, {
+      width: '640px',
+      maxWidth: '90vw',
+      panelClass: 'app-dialog',
+      backdropClass: 'app-dialog-backdrop',
+      data: { book: null, categories: this.categories(), publishers: this.publishers(), authors: this.authors() },
     });
-    this.showForm.set(true);
-  }
 
-  protected edit(book: Book): void {
-    this.editingId.set(book.id);
-    this.form.setValue({
-      isbn: book.isbn,
-      title: book.title,
-      description: book.description ?? '',
-      price: book.price,
-      costPrice: book.costPrice,
-      categoryId: book.categoryId,
-      publisherId: book.publisherId,
-      authorIds: book.authors.map((author) => author.id),
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.load();
+      }
     });
-    this.showForm.set(true);
   }
 
-  protected cancelForm(): void {
-    this.showForm.set(false);
-    this.editingId.set(null);
+  protected openEditDialog(book: Book): void {
+    const dialogRef = this.dialog.open(BookFormDialog, {
+      width: '640px',
+      maxWidth: '90vw',
+      panelClass: 'app-dialog',
+      backdropClass: 'app-dialog-backdrop',
+      data: { book, categories: this.categories(), publishers: this.publishers(), authors: this.authors() },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.load();
+      }
+    });
   }
 
   protected toggleStatus(book: Book): void {
     const nextStatus: BookStatus = book.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     this.bookService.updateStatus(book.id, nextStatus).subscribe({
       next: () => this.load(),
-      error: (error: Error) => this.errorMessage.set(error.message),
-    });
-  }
-
-  protected submit(): void {
-    if (this.form.invalid) {
-      return;
-    }
-    this.errorMessage.set(null);
-    const value = this.form.getRawValue();
-    const id = this.editingId();
-
-    const operation = id
-      ? this.bookService.update(id, {
-          title: value.title,
-          description: value.description,
-          price: value.price,
-          costPrice: value.costPrice,
-          categoryId: value.categoryId!,
-          publisherId: value.publisherId,
-          authorIds: value.authorIds,
-        })
-      : this.bookService.create({
-          isbn: value.isbn,
-          title: value.title,
-          description: value.description,
-          price: value.price,
-          costPrice: value.costPrice,
-          categoryId: value.categoryId!,
-          publisherId: value.publisherId,
-          authorIds: value.authorIds,
-        });
-
-    operation.subscribe({
-      next: () => {
-        this.showForm.set(false);
-        this.editingId.set(null);
-        this.load();
-      },
       error: (error: Error) => this.errorMessage.set(error.message),
     });
   }

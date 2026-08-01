@@ -99,9 +99,54 @@ al oxblood), `tertiary: mat.$green-palette`, `typography: Inter`,
 `--color-parchment` directamente (Material solo controla sus propios
 componentes internos: inputs, selects, tabs).
 
+## Modal (`MatDialog`) — formularios de crear/editar
+
+Los formularios de crear/editar que antes eran un panel inline (empujando la
+tabla hacia abajo) ahora son un `MatDialog`: `book-form-dialog`,
+`movement-form-dialog`, `purchase-form-dialog`, `supplier-form-dialog`,
+`sale-form-dialog`, `customer-form-dialog` (uno por feature, mismo patrón).
+
+- **Por qué modal, no panel inline**: la tabla nunca debe moverse al abrir un
+  formulario — es el mismo dato, solo cambia el modo de edición.
+- **Profundidad**: única segunda excepción a "bordes, no sombras" (la
+  primera es la tarjeta de login) — un modal es el mismo tipo de "momento de
+  llegada" (una ficha se levanta sobre el lienzo), así que reusa esa misma
+  sombra de 3 capas en vez de inventar una tercera estrategia.
+- **Clases**: `panelClass: 'app-dialog'` + `backdropClass:
+  'app-dialog-backdrop'` (definidas en `styles.css`). Radio `14px` (mayor
+  que el `8px` de paneles inline, para diferenciar "modal" de "panel").
+  Backdrop tintado en tinta (`rgba(27,36,48,.35)`), no negro puro.
+- **Contenido interno**: mismos `.field`/`.field-select`/`.field-label` de
+  siempre — el modal es un contenedor nuevo, no un lenguaje visual nuevo.
+  Título en `font-serif text-lg font-semibold text-ink` (eco del H1 de
+  página, a menor escala).
+- **Datos**: el padre pasa las listas ya cargadas (categorías, libros,
+  proveedores…) como `data` del diálogo en vez de que el diálogo las vuelva
+  a pedir — evita llamadas HTTP duplicadas cada vez que se abre.
+- **Cierre**: `dialogRef.close(response.data ?? undefined)` — el padre solo
+  recarga la lista si `afterClosed()` trae un resultado truthy (se guardó
+  algo), no en cancelar.
+
+## Bug conocido y arreglado: sentinel de "Todos"/"Sin X" en `mat-select`
+
+Angular Material `mat-select` **limpia la selección visualmente en cuanto el
+`FormControl` vale `null`**, aunque exista una `<mat-option [value]="null">`
+que debería coincidir — muestra el placeholder vacío en vez del texto de esa
+opción, y no marca ningún check en el panel abierto. Pasa con cualquier
+opción "Todos"/"Todas"/"Sin editorial"/"Cliente genérico" que use `null`
+como valor.
+
+**Fix**: nunca usar `null` como valor de una `mat-option`. Usar un sentinel
+real (`0` para IDs numéricos ya que empiezan en 1, `''` para enums de
+texto) y convertir ese sentinel a `undefined`/`null` solo al armar el
+payload de la petición HTTP (`filters.categoryId || undefined`,
+`value.customerId || null`, etc.). Ya aplicado en Libros (categoría/estado),
+Inventario (libro/tipo en filtro de movimientos) y Ventas (cliente
+genérico). Si aparece un nuevo combobox opcional en otra fase, aplicar el
+mismo patrón desde el inicio.
+
 ## Pendiente / no cubierto todavía
 
-- Dashboard real (Fase 6): hoy es un estado vacío de marca, sin métricas.
-- Módulos de Inventario, Compras, Ventas, Reportes, Usuarios: sin construir
-  aún — al construirlos, seguir los mismos patrones de esta hoja.
+- Dashboard real: ✅ hecho (Fase 6) — KPI tiles con datos reales.
+- Módulo de Usuarios: sin construir aún.
 - Sin modo oscuro explícito (la app fija `color-scheme: light`).

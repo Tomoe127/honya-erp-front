@@ -120,3 +120,38 @@ p {
 .field-select .mat-mdc-form-field-subscript-wrapper {
   display: none;
 }
+
+/*
+ * Modal (MatDialog): la tarjeta de login era la única excepción a "bordes,
+ * no sombras" porque es un momento de "llegada" — un modal es el mismo tipo
+ * de momento (una ficha se levanta sobre el lienzo), así que reutiliza esa
+ * misma excepción en vez de introducir una tercera estrategia de profundidad.
+ * Backdrop tintado en tinta (no negro puro) para quedarse en el mundo
+ * pergamino/tinta.
+ */
+.app-dialog .mat-mdc-dialog-surface {
+  --mdc-dialog-container-color: var(--color-paper);
+  --mdc-dialog-container-shape: 14px;
+  box-shadow:
+    0 0 0 1px var(--color-line),
+    0 12px 32px rgba(27, 36, 48, 0.14),
+    0 4px 12px rgba(27, 36, 48, 0.08) !important;
+}
+
+.app-dialog .mat-mdc-dialog-title {
+  padding: 20px 24px 0 !important;
+  margin: 0 !important;
+}
+
+.app-dialog .mat-mdc-dialog-content {
+  padding: 16px 24px !important;
+  color: var(--color-ink);
+}
+
+.app-dialog .mat-mdc-dialog-actions {
+  padding: 12px 24px 20px !important;
+}
+
+.app-dialog-backdrop {
+  background-color: rgba(27, 36, 48, 0.35);
+}
