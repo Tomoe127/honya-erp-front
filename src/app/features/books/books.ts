@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { CatalogTabs } from '../../shared/components/catalog-tabs/catalog-tabs';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Author } from '../authors/data/author.model';
 import { AuthorService } from '../authors/data/author.service';
 import { Category } from '../categories/data/category.model';
@@ -70,14 +71,16 @@ const ALL_STATUSES = '';
 
         <button mat-button type="button" (click)="resetFilters()">Limpiar</button>
         <span class="flex-1"></span>
-        <button
-          mat-flat-button
-          type="button"
-          style="background-color: var(--color-brand); color: white;"
-          (click)="openCreateDialog()"
-        >
-          Nuevo libro
-        </button>
+        @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+          <button
+            mat-flat-button
+            type="button"
+            style="background-color: var(--color-brand); color: white;"
+            (click)="openCreateDialog()"
+          >
+            Nuevo libro
+          </button>
+        }
       </form>
     </div>
 
@@ -129,16 +132,18 @@ const ALL_STATUSES = '';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let book" class="text-right whitespace-nowrap">
-            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(book)">
-              Editar
-            </button>
-            <button
-              type="button"
-              class="text-sm font-medium text-ink-soft hover:underline ml-3"
-              (click)="toggleStatus(book)"
-            >
-              {{ book.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}
-            </button>
+            @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+              <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(book)">
+                Editar
+              </button>
+              <button
+                type="button"
+                class="text-sm font-medium text-ink-soft hover:underline ml-3"
+                (click)="toggleStatus(book)"
+              >
+                {{ book.status === 'ACTIVE' ? 'Desactivar' : 'Activar' }}
+              </button>
+            }
           </td>
         </ng-container>
 
@@ -159,6 +164,7 @@ const ALL_STATUSES = '';
 export class Books {
   private readonly fb = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
+  protected readonly authStore = inject(AuthStore);
   private readonly bookService = inject(BookService);
   private readonly categoryService = inject(CategoryService);
   private readonly publisherService = inject(PublisherService);

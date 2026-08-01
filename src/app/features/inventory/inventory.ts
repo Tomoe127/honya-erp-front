@@ -10,6 +10,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { Book } from '../books/data/book.model';
 import { BookService } from '../books/data/book.service';
+import { AuthStore } from '../../core/auth/auth.store';
 import { MovementFormDialog } from './movement-form-dialog/movement-form-dialog';
 import { Movement, MovementType } from './data/movement.model';
 import { MovementService } from './data/movement.service';
@@ -143,20 +144,22 @@ const ALL_TYPES = '';
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let row" class="text-right whitespace-nowrap">
-              <button
-                type="button"
-                class="text-sm font-medium text-brand hover:underline"
-                (click)="startEditMinStock(row)"
-              >
-                Editar mínimo
-              </button>
-              <button
-                type="button"
-                class="text-sm font-medium text-ink-soft hover:underline ml-3"
-                (click)="openMovementDialog(row.bookId)"
-              >
-                Ajustar
-              </button>
+              @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+                <button
+                  type="button"
+                  class="text-sm font-medium text-brand hover:underline"
+                  (click)="startEditMinStock(row)"
+                >
+                  Editar mínimo
+                </button>
+                <button
+                  type="button"
+                  class="text-sm font-medium text-ink-soft hover:underline ml-3"
+                  (click)="openMovementDialog(row.bookId)"
+                >
+                  Ajustar
+                </button>
+              }
             </td>
           </ng-container>
 
@@ -211,14 +214,16 @@ const ALL_TYPES = '';
 
           <button mat-button type="button" (click)="resetMovementFilters()">Limpiar</button>
           <span class="flex-1"></span>
-          <button
-            mat-flat-button
-            type="button"
-            style="background-color: var(--color-brand); color: white;"
-            (click)="openMovementDialog(null)"
-          >
-            Nuevo movimiento
-          </button>
+          @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+            <button
+              mat-flat-button
+              type="button"
+              style="background-color: var(--color-brand); color: white;"
+              (click)="openMovementDialog(null)"
+            >
+              Nuevo movimiento
+            </button>
+          }
         </form>
       </div>
 
@@ -281,6 +286,7 @@ const ALL_TYPES = '';
 export class Inventory {
   private readonly fb = inject(FormBuilder);
   private readonly dialog = inject(MatDialog);
+  protected readonly authStore = inject(AuthStore);
   private readonly stockService = inject(StockService);
   private readonly movementService = inject(MovementService);
   private readonly bookService = inject(BookService);

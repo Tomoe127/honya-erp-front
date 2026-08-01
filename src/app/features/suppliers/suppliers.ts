@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { PurchaseTabs } from '../../shared/components/purchase-tabs/purchase-tabs';
+import { AuthStore } from '../../core/auth/auth.store';
 import { SupplierFormDialog } from './supplier-form-dialog/supplier-form-dialog';
 import { Supplier } from './data/supplier.model';
 import { SupplierService } from './data/supplier.service';
@@ -21,14 +22,16 @@ import { SupplierService } from './data/supplier.service';
     <div class="rounded-lg border border-line bg-paper p-5 mb-6">
       <div class="flex items-center justify-between">
         <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Proveedores registrados</span>
-        <button
-          mat-flat-button
-          type="button"
-          style="background-color: var(--color-brand); color: white;"
-          (click)="openCreateDialog()"
-        >
-          Nuevo proveedor
-        </button>
+        @if (authStore.hasAnyRole('ADMIN', 'COMPRADOR')) {
+          <button
+            mat-flat-button
+            type="button"
+            style="background-color: var(--color-brand); color: white;"
+            (click)="openCreateDialog()"
+          >
+            Nuevo proveedor
+          </button>
+        }
       </div>
 
       @if (errorMessage()) {
@@ -80,16 +83,18 @@ import { SupplierService } from './data/supplier.service';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let supplier" class="text-right whitespace-nowrap">
-            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(supplier)">
-              Editar
-            </button>
-            <button
-              type="button"
-              class="text-sm font-medium text-ink-soft hover:underline ml-3"
-              (click)="toggleStatus(supplier)"
-            >
-              {{ supplier.active ? 'Desactivar' : 'Activar' }}
-            </button>
+            @if (authStore.hasAnyRole('ADMIN', 'COMPRADOR')) {
+              <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(supplier)">
+                Editar
+              </button>
+              <button
+                type="button"
+                class="text-sm font-medium text-ink-soft hover:underline ml-3"
+                (click)="toggleStatus(supplier)"
+              >
+                {{ supplier.active ? 'Desactivar' : 'Activar' }}
+              </button>
+            }
           </td>
         </ng-container>
 
@@ -109,6 +114,7 @@ import { SupplierService } from './data/supplier.service';
 })
 export class Suppliers {
   private readonly dialog = inject(MatDialog);
+  protected readonly authStore = inject(AuthStore);
   private readonly supplierService = inject(SupplierService);
 
   protected readonly columns = ['name', 'taxId', 'phone', 'email', 'status', 'actions'];

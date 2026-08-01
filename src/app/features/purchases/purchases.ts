@@ -6,6 +6,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { Book } from '../books/data/book.model';
 import { BookService } from '../books/data/book.service';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Supplier } from '../suppliers/data/supplier.model';
 import { SupplierService } from '../suppliers/data/supplier.service';
 import { PurchaseTabs } from '../../shared/components/purchase-tabs/purchase-tabs';
@@ -26,14 +27,16 @@ import { PurchaseService } from './data/purchase.service';
     <div class="rounded-lg border border-line bg-paper p-5 mb-6">
       <div class="flex items-center justify-between">
         <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Compras registradas</span>
-        <button
-          mat-flat-button
-          type="button"
-          style="background-color: var(--color-brand); color: white;"
-          (click)="openCreateDialog()"
-        >
-          Nueva compra
-        </button>
+        @if (authStore.hasAnyRole('ADMIN', 'COMPRADOR')) {
+          <button
+            mat-flat-button
+            type="button"
+            style="background-color: var(--color-brand); color: white;"
+            (click)="openCreateDialog()"
+          >
+            Nueva compra
+          </button>
+        }
       </div>
 
       @if (errorMessage()) {
@@ -132,7 +135,7 @@ import { PurchaseService } from './data/purchase.service';
             >
               Ver detalle
             </button>
-            @if (purchase.status === 'COMPLETED') {
+            @if (purchase.status === 'COMPLETED' && authStore.hasAnyRole('ADMIN', 'COMPRADOR')) {
               <button
                 type="button"
                 class="text-sm font-medium text-danger hover:underline ml-3"
@@ -160,6 +163,7 @@ import { PurchaseService } from './data/purchase.service';
 })
 export class Purchases {
   private readonly dialog = inject(MatDialog);
+  protected readonly authStore = inject(AuthStore);
   private readonly purchaseService = inject(PurchaseService);
   private readonly supplierService = inject(SupplierService);
   private readonly bookService = inject(BookService);

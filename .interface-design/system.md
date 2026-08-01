@@ -145,8 +145,27 @@ Inventario (libro/tipo en filtro de movimientos) y Ventas (cliente
 genérico). Si aparece un nuevo combobox opcional en otra fase, aplicar el
 mismo patrón desde el inicio.
 
+## Visibilidad por rol: ocultar, no deshabilitar
+
+Los botones de crear/editar/cancelar/activar-desactivar se ocultan por
+completo (`@if (authStore.hasAnyRole('ADMIN', 'X'))`) para los roles sin
+permiso, en vez de mostrarse deshabilitados. Un vendedor no tiene ninguna
+razón para saber que existe un "Editar libro" que nunca va a poder usar —
+deshabilitar solo agrega ruido; ya es el patrón que usa la app para
+condiciones de estado (ej. "Cancelar" en Ventas solo aparece si `status ===
+'COMPLETED'`), así que el chequeo de rol es la misma idea aplicada a permisos
+en vez de estado. `AuthStore.hasAnyRole(...roles)` refleja exactamente los
+`@PreAuthorize` del backend: catálogo/inventario → ADMIN+ALMACENERO;
+compras/proveedores → ADMIN+COMPRADOR; ventas/clientes → ADMIN+VENDEDOR. Los
+GET nunca se restringen (todos los roles ven todo, solo cambia quién
+escribe). Al agregar un módulo nuevo, replicar este `@if` en cada botón de
+escritura desde el inicio, no como parche después.
+
 ## Pendiente / no cubierto todavía
 
 - Dashboard real: ✅ hecho (Fase 6) — KPI tiles con datos reales.
-- Módulo de Usuarios: sin construir aún.
+- Módulo de Usuarios: ✅ hecho — única ruta protegida con `roleGuard`
+  (`data: { roles: ['ADMIN'] }`) en vez de solo ocultar botones, porque
+  `GET /api/users` también es ADMIN-only en el backend (no solo la
+  escritura, como el resto de módulos).
 - Sin modo oscuro explícito (la app fija `color-scheme: light`).

@@ -28,4 +28,8 @@ export class AuthStore {
   hasRole(role: string): boolean {
     return this.roles().includes(role);
   }
+
+  hasAnyRole(...allowedRoles: string[]): boolean {
+    return allowedRoles.some((role) => this.roles().includes(role));
+  }
 }

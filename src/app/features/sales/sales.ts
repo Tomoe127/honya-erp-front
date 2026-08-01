@@ -6,6 +6,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { Book } from '../books/data/book.model';
 import { BookService } from '../books/data/book.service';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Customer } from '../customers/data/customer.model';
 import { CustomerService } from '../customers/data/customer.service';
 import { SaleTabs } from '../../shared/components/sale-tabs/sale-tabs';
@@ -26,14 +27,16 @@ import { SaleService } from './data/sale.service';
     <div class="rounded-lg border border-line bg-paper p-5 mb-6">
       <div class="flex items-center justify-between">
         <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Ventas registradas</span>
-        <button
-          mat-flat-button
-          type="button"
-          style="background-color: var(--color-brand); color: white;"
-          (click)="openCreateDialog()"
-        >
-          Nueva venta
-        </button>
+        @if (authStore.hasAnyRole('ADMIN', 'VENDEDOR')) {
+          <button
+            mat-flat-button
+            type="button"
+            style="background-color: var(--color-brand); color: white;"
+            (click)="openCreateDialog()"
+          >
+            Nueva venta
+          </button>
+        }
       </div>
 
       @if (errorMessage()) {
@@ -129,7 +132,7 @@ import { SaleService } from './data/sale.service';
             >
               Ver detalle
             </button>
-            @if (sale.status === 'COMPLETED') {
+            @if (sale.status === 'COMPLETED' && authStore.hasAnyRole('ADMIN', 'VENDEDOR')) {
               <button
                 type="button"
                 class="text-sm font-medium text-danger hover:underline ml-3"
@@ -157,6 +160,7 @@ import { SaleService } from './data/sale.service';
 })
 export class Sales {
   private readonly dialog = inject(MatDialog);
+  protected readonly authStore = inject(AuthStore);
   private readonly saleService = inject(SaleService);
   private readonly customerService = inject(CustomerService);
   private readonly bookService = inject(BookService);

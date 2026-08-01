@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { CatalogTabs } from '../../shared/components/catalog-tabs/catalog-tabs';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Publisher } from './data/publisher.model';
 import { PublisherService } from './data/publisher.service';
 
@@ -17,50 +18,52 @@ import { PublisherService } from './data/publisher.service';
 
     <app-catalog-tabs />
 
-    <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
-        {{ editingId() ? 'Editar editorial' : 'Nueva editorial' }}
-      </h2>
-      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-3 items-end">
-        <div class="flex flex-col gap-1.5 min-w-[200px]">
-          <label for="pub-name" class="field-label">Nombre</label>
-          <input id="pub-name" formControlName="name" class="field" />
-        </div>
+    @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+      <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
+          {{ editingId() ? 'Editar editorial' : 'Nueva editorial' }}
+        </h2>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-3 items-end">
+          <div class="flex flex-col gap-1.5 min-w-[200px]">
+            <label for="pub-name" class="field-label">Nombre</label>
+            <input id="pub-name" formControlName="name" class="field" />
+          </div>
 
-        <div class="flex flex-col gap-1.5 min-w-[200px]">
-          <label for="pub-email" class="field-label">Email</label>
-          <input id="pub-email" formControlName="contactEmail" class="field" />
-        </div>
+          <div class="flex flex-col gap-1.5 min-w-[200px]">
+            <label for="pub-email" class="field-label">Email</label>
+            <input id="pub-email" formControlName="contactEmail" class="field" />
+          </div>
 
-        <div class="flex flex-col gap-1.5 min-w-[160px]">
-          <label for="pub-phone" class="field-label">Teléfono</label>
-          <input id="pub-phone" formControlName="contactPhone" class="field" />
-        </div>
+          <div class="flex flex-col gap-1.5 min-w-[160px]">
+            <label for="pub-phone" class="field-label">Teléfono</label>
+            <input id="pub-phone" formControlName="contactPhone" class="field" />
+          </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[220px]">
-          <label for="pub-address" class="field-label">Dirección</label>
-          <input id="pub-address" formControlName="address" class="field" />
-        </div>
+          <div class="flex flex-col gap-1.5 flex-1 min-w-[220px]">
+            <label for="pub-address" class="field-label">Dirección</label>
+            <input id="pub-address" formControlName="address" class="field" />
+          </div>
 
-        <div class="flex gap-2">
-          <button
-            mat-flat-button
-            type="submit"
-            style="background-color: var(--color-brand); color: white;"
-            [disabled]="form.invalid"
-          >
-            {{ editingId() ? 'Actualizar' : 'Crear' }}
-          </button>
-          @if (editingId()) {
-            <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
-          }
-        </div>
-      </form>
+          <div class="flex gap-2">
+            <button
+              mat-flat-button
+              type="submit"
+              style="background-color: var(--color-brand); color: white;"
+              [disabled]="form.invalid"
+            >
+              {{ editingId() ? 'Actualizar' : 'Crear' }}
+            </button>
+            @if (editingId()) {
+              <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
+            }
+          </div>
+        </form>
 
-      @if (errorMessage()) {
-        <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
-      }
-    </div>
+        @if (errorMessage()) {
+          <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
+        }
+      </div>
+    }
 
     <div class="rounded-lg border border-line bg-paper overflow-hidden">
       <table mat-table [dataSource]="publishers()" class="w-full">
@@ -82,13 +85,15 @@ import { PublisherService } from './data/publisher.service';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let publisher" class="text-right">
-            <button
-              type="button"
-              class="text-sm font-medium text-brand hover:underline"
-              (click)="edit(publisher)"
-            >
-              Editar
-            </button>
+            @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+              <button
+                type="button"
+                class="text-sm font-medium text-brand hover:underline"
+                (click)="edit(publisher)"
+              >
+                Editar
+              </button>
+            }
           </td>
         </ng-container>
 
@@ -108,6 +113,7 @@ import { PublisherService } from './data/publisher.service';
 })
 export class Publishers {
   private readonly fb = inject(FormBuilder);
+  protected readonly authStore = inject(AuthStore);
   private readonly publisherService = inject(PublisherService);
 
   protected readonly columns = ['name', 'contactEmail', 'contactPhone', 'actions'];

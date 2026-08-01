@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { CatalogTabs } from '../../shared/components/catalog-tabs/catalog-tabs';
+import { AuthStore } from '../../core/auth/auth.store';
 import { Author } from './data/author.model';
 import { AuthorService } from './data/author.service';
 
@@ -17,40 +18,42 @@ import { AuthorService } from './data/author.service';
 
     <app-catalog-tabs />
 
-    <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
-        {{ editingId() ? 'Editar autor' : 'Nuevo autor' }}
-      </h2>
-      <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-3 items-end">
-        <div class="flex flex-col gap-1.5 min-w-[220px]">
-          <label for="author-name" class="field-label">Nombre</label>
-          <input id="author-name" formControlName="name" class="field" />
-        </div>
+    @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+      <div class="rounded-lg border border-line bg-paper p-5 mb-6" [class.spine]="!!editingId()">
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-muted mb-3">
+          {{ editingId() ? 'Editar autor' : 'Nuevo autor' }}
+        </h2>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-wrap gap-3 items-end">
+          <div class="flex flex-col gap-1.5 min-w-[220px]">
+            <label for="author-name" class="field-label">Nombre</label>
+            <input id="author-name" formControlName="name" class="field" />
+          </div>
 
-        <div class="flex flex-col gap-1.5 flex-1 min-w-[240px]">
-          <label for="author-bio" class="field-label">Biografía</label>
-          <input id="author-bio" formControlName="bio" class="field" />
-        </div>
+          <div class="flex flex-col gap-1.5 flex-1 min-w-[240px]">
+            <label for="author-bio" class="field-label">Biografía</label>
+            <input id="author-bio" formControlName="bio" class="field" />
+          </div>
 
-        <div class="flex gap-2">
-          <button
-            mat-flat-button
-            type="submit"
-            style="background-color: var(--color-brand); color: white;"
-            [disabled]="form.invalid"
-          >
-            {{ editingId() ? 'Actualizar' : 'Crear' }}
-          </button>
-          @if (editingId()) {
-            <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
-          }
-        </div>
-      </form>
+          <div class="flex gap-2">
+            <button
+              mat-flat-button
+              type="submit"
+              style="background-color: var(--color-brand); color: white;"
+              [disabled]="form.invalid"
+            >
+              {{ editingId() ? 'Actualizar' : 'Crear' }}
+            </button>
+            @if (editingId()) {
+              <button mat-button type="button" (click)="cancelEdit()">Cancelar</button>
+            }
+          </div>
+        </form>
 
-      @if (errorMessage()) {
-        <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
-      }
-    </div>
+        @if (errorMessage()) {
+          <p class="text-sm text-danger mt-2">{{ errorMessage() }}</p>
+        }
+      </div>
+    }
 
     <div class="rounded-lg border border-line bg-paper overflow-hidden">
       <table mat-table [dataSource]="authors()" class="w-full">
@@ -67,13 +70,15 @@ import { AuthorService } from './data/author.service';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let author" class="text-right">
-            <button
-              type="button"
-              class="text-sm font-medium text-brand hover:underline"
-              (click)="edit(author)"
-            >
-              Editar
-            </button>
+            @if (authStore.hasAnyRole('ADMIN', 'ALMACENERO')) {
+              <button
+                type="button"
+                class="text-sm font-medium text-brand hover:underline"
+                (click)="edit(author)"
+              >
+                Editar
+              </button>
+            }
           </td>
         </ng-container>
 
@@ -93,6 +98,7 @@ import { AuthorService } from './data/author.service';
 })
 export class Authors {
   private readonly fb = inject(FormBuilder);
+  protected readonly authStore = inject(AuthStore);
   private readonly authorService = inject(AuthorService);
 
   protected readonly columns = ['name', 'bio', 'actions'];

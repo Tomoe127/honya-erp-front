@@ -3,35 +3,32 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
-import { SaleTabs } from '../../shared/components/sale-tabs/sale-tabs';
 import { AuthStore } from '../../core/auth/auth.store';
-import { CustomerFormDialog } from './customer-form-dialog/customer-form-dialog';
-import { Customer } from './data/customer.model';
-import { CustomerService } from './data/customer.service';
+import { Role } from './data/role.model';
+import { RoleService } from './data/role.service';
+import { User } from './data/user.model';
+import { UserService } from './data/user.service';
+import { UserFormDialog } from './user-form-dialog/user-form-dialog';
 
 @Component({
-  selector: 'app-customers',
+  selector: 'app-users',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatPaginatorModule, MatTableModule, SaleTabs],
+  imports: [MatButtonModule, MatPaginatorModule, MatTableModule],
   template: `
-    <h1 class="font-serif text-2xl font-semibold tracking-tight text-ink mb-1">Clientes</h1>
-    <p class="text-sm text-ink-muted mb-6">Clientes registrados para la venta.</p>
-
-    <app-sale-tabs />
+    <h1 class="font-serif text-2xl font-semibold tracking-tight text-ink mb-1">Usuarios</h1>
+    <p class="text-sm text-ink-muted mb-6">Cuentas del sistema y sus roles.</p>
 
     <div class="rounded-lg border border-line bg-paper p-5 mb-6">
       <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Clientes registrados</span>
-        @if (authStore.hasAnyRole('ADMIN', 'VENDEDOR')) {
-          <button
-            mat-flat-button
-            type="button"
-            style="background-color: var(--color-brand); color: white;"
-            (click)="openCreateDialog()"
-          >
-            Nuevo cliente
-          </button>
-        }
+        <span class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Usuarios registrados</span>
+        <button
+          mat-flat-button
+          type="button"
+          style="background-color: var(--color-brand); color: white;"
+          (click)="openCreateDialog()"
+        >
+          Nuevo usuario
+        </button>
       </div>
 
       @if (errorMessage()) {
@@ -40,33 +37,31 @@ import { CustomerService } from './data/customer.service';
     </div>
 
     <div class="rounded-lg border border-line bg-paper overflow-hidden">
-      <table mat-table [dataSource]="customers()" class="w-full">
-        <ng-container matColumnDef="name">
+      <table mat-table [dataSource]="users()" class="w-full">
+        <ng-container matColumnDef="username">
+          <th mat-header-cell *matHeaderCellDef>Usuario</th>
+          <td mat-cell *matCellDef="let user" class="font-medium tabular">{{ user.username }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="fullName">
           <th mat-header-cell *matHeaderCellDef>Nombre</th>
-          <td mat-cell *matCellDef="let customer" class="font-medium">{{ customer.name }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="document">
-          <th mat-header-cell *matHeaderCellDef>Documento</th>
-          <td mat-cell *matCellDef="let customer" class="tabular text-ink-muted">
-            {{ customer.documentType }} {{ customer.documentNumber }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="phone">
-          <th mat-header-cell *matHeaderCellDef>Teléfono</th>
-          <td mat-cell *matCellDef="let customer">{{ customer.phone }}</td>
+          <td mat-cell *matCellDef="let user">{{ user.fullName }}</td>
         </ng-container>
 
         <ng-container matColumnDef="email">
           <th mat-header-cell *matHeaderCellDef>Email</th>
-          <td mat-cell *matCellDef="let customer">{{ customer.email }}</td>
+          <td mat-cell *matCellDef="let user">{{ user.email }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="roles">
+          <th mat-header-cell *matHeaderCellDef>Roles</th>
+          <td mat-cell *matCellDef="let user">{{ user.roles.join(', ') }}</td>
         </ng-container>
 
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Estado</th>
-          <td mat-cell *matCellDef="let customer">
-            @if (customer.active) {
+          <td mat-cell *matCellDef="let user">
+            @if (user.active) {
               <span
                 class="inline-flex items-center rounded-full bg-success-soft text-success text-xs font-medium px-2.5 py-1"
               >
@@ -84,17 +79,17 @@ import { CustomerService } from './data/customer.service';
 
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let customer" class="text-right whitespace-nowrap">
-            @if (authStore.hasAnyRole('ADMIN', 'VENDEDOR')) {
-              <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(customer)">
-                Editar
-              </button>
+          <td mat-cell *matCellDef="let user" class="text-right whitespace-nowrap">
+            <button type="button" class="text-sm font-medium text-brand hover:underline" (click)="openEditDialog(user)">
+              Editar
+            </button>
+            @if (user.username !== authStore.currentUser()?.username) {
               <button
                 type="button"
                 class="text-sm font-medium text-ink-soft hover:underline ml-3"
-                (click)="toggleStatus(customer)"
+                (click)="toggleStatus(user)"
               >
-                {{ customer.active ? 'Desactivar' : 'Activar' }}
+                {{ user.active ? 'Desactivar' : 'Activar' }}
               </button>
             }
           </td>
@@ -114,28 +109,39 @@ import { CustomerService } from './data/customer.service';
     </div>
   `,
 })
-export class Customers {
+export class Users {
   private readonly dialog = inject(MatDialog);
   protected readonly authStore = inject(AuthStore);
-  private readonly customerService = inject(CustomerService);
+  private readonly userService = inject(UserService);
+  private readonly roleService = inject(RoleService);
 
-  protected readonly columns = ['name', 'document', 'phone', 'email', 'status', 'actions'];
-  protected readonly customers = signal<Customer[]>([]);
+  protected readonly columns = ['username', 'fullName', 'email', 'roles', 'status', 'actions'];
+  protected readonly users = signal<User[]>([]);
+  protected readonly roles = signal<Role[]>([]);
   protected readonly totalElements = signal(0);
   protected readonly pageIndex = signal(0);
   protected readonly pageSize = signal(10);
   protected readonly errorMessage = signal<string | null>(null);
 
   constructor() {
+    this.loadRoles();
     this.load();
   }
 
+  private loadRoles(): void {
+    this.roleService.listAll().subscribe((response) => {
+      if (response.data) {
+        this.roles.set(response.data);
+      }
+    });
+  }
+
   private load(): void {
-    this.customerService.list(this.pageIndex(), this.pageSize()).subscribe({
+    this.userService.list(this.pageIndex(), this.pageSize()).subscribe({
       next: (response) => {
         const page = response.data;
         if (page) {
-          this.customers.set(page.content);
+          this.users.set(page.content);
           this.totalElements.set(page.totalElements);
         }
       },
@@ -152,17 +158,17 @@ export class Customers {
     this.openDialog(null);
   }
 
-  protected openEditDialog(customer: Customer): void {
-    this.openDialog(customer);
+  protected openEditDialog(user: User): void {
+    this.openDialog(user);
   }
 
-  private openDialog(customer: Customer | null): void {
-    const dialogRef = this.dialog.open(CustomerFormDialog, {
+  private openDialog(user: User | null): void {
+    const dialogRef = this.dialog.open(UserFormDialog, {
       width: '560px',
       maxWidth: '90vw',
       panelClass: 'app-dialog',
       backdropClass: 'app-dialog-backdrop',
-      data: { customer },
+      data: { user, roles: this.roles() },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -172,8 +178,8 @@ export class Customers {
     });
   }
 
-  protected toggleStatus(customer: Customer): void {
-    this.customerService.updateStatus(customer.id, !customer.active).subscribe({
+  protected toggleStatus(user: User): void {
+    this.userService.updateStatus(user.id, !user.active).subscribe({
       next: () => this.load(),
       error: (error: Error) => this.errorMessage.set(error.message),
     });
